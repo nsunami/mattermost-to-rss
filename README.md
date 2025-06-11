@@ -26,50 +26,55 @@ The API detects when your bot is mentioned in several ways:
 
 ## API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/` | GET | API information and available endpoints |
-| `/rss` | GET | RSS feed of messages mentioning the bot |
-| `/rss.xml` | GET | RSS feed (alternative endpoint) |
-| `/posts` | GET | Raw bot mentions in JSON format |
-| `/health` | GET | Health check endpoint |
+| Endpoint   | Method | Description                             |
+| ---------- | ------ | --------------------------------------- |
+| `/`        | GET    | API information and available endpoints |
+| `/rss`     | GET    | RSS feed of messages mentioning the bot |
+| `/rss.xml` | GET    | RSS feed (alternative endpoint)         |
+| `/posts`   | GET    | Raw bot mentions in JSON format         |
+| `/health`  | GET    | Health check endpoint                   |
 
 ## Installation
 
 ### Prerequisites
 
-- Node.js 16+ 
+- Node.js 16+
 - A Mattermost instance with bot account configured
 - Bot access token with appropriate permissions
 
 ### Local Development
 
 1. Clone the repository:
+
 ```bash
 git clone <repository-url>
 cd mattermost-rss-api
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
 
 3. Copy the environment file and configure:
+
 ```bash
 cp .env.example .env
 ```
 
 4. Edit `.env` with your Mattermost configuration:
+
 ```bash
 MATTERMOST_URL=https://your-mattermost-instance.com
 MATTERMOST_BOT_TOKEN=your_bot_access_token
 MATTERMOST_TEAM_ID=team_id_here
-MATTERMOST_CHANNEL_ID=channel_id_here  
+MATTERMOST_CHANNEL_ID=channel_id_here
 MATTERMOST_BOT_USER_ID=bot_user_id_here
 ```
 
 5. Start the development server:
+
 ```bash
 npm run dev
 ```
@@ -79,11 +84,13 @@ The API will be available at `http://localhost:3000`
 ### Docker Deployment
 
 1. Build the Docker image:
+
 ```bash
 npm run docker:build
 ```
 
 2. Run with Docker:
+
 ```bash
 npm run docker:run
 ```
@@ -91,7 +98,7 @@ npm run docker:run
 Or use docker-compose:
 
 ```yaml
-version: '3.8'
+version: "3.8"
 services:
   mattermost-rss-api:
     build: .
@@ -110,16 +117,16 @@ services:
 
 ### Environment Variables
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `MATTERMOST_URL` | Yes | Base URL of your Mattermost instance |
-| `MATTERMOST_BOT_TOKEN` | Yes | Bot access token |
-| `MATTERMOST_TEAM_ID` | Yes | Team ID where the bot operates |
-| `MATTERMOST_CHANNEL_ID` | Yes | Channel ID to fetch posts from |
-| `MATTERMOST_BOT_USER_ID` | Yes | User ID of the bot account |
-| `PORT` | No | Server port (default: 3000) |
-| `BASE_URL` | No | Base URL for RSS feed links |
-| `NODE_ENV` | No | Environment (development/production) |
+| Variable                 | Required | Description                          |
+| ------------------------ | -------- | ------------------------------------ |
+| `MATTERMOST_URL`         | Yes      | Base URL of your Mattermost instance |
+| `MATTERMOST_BOT_TOKEN`   | Yes      | Bot access token                     |
+| `MATTERMOST_TEAM_ID`     | Yes      | Team ID where the bot operates       |
+| `MATTERMOST_CHANNEL_ID`  | Yes      | Channel ID to fetch posts from       |
+| `MATTERMOST_BOT_USER_ID` | Yes      | User ID of the bot account           |
+| `PORT`                   | No       | Server port (default: 3000)          |
+| `BASE_URL`               | No       | Base URL for RSS feed links          |
+| `NODE_ENV`               | No       | Environment (development/production) |
 
 ### Getting Mattermost IDs
 
@@ -158,6 +165,7 @@ The generated RSS feed includes:
 ### Markdown Conversion
 
 The API converts basic Markdown formatting to HTML:
+
 - `**bold**` → `<strong>bold</strong>`
 - `*italic*` → `<em>italic</em>`
 - `` `code` `` → `<code>code</code>`
@@ -166,36 +174,43 @@ The API converts basic Markdown formatting to HTML:
 ## Usage Examples
 
 ### Fetch RSS Feed
+
 ```bash
 curl http://localhost:3000/rss
 ```
 
 ### Get Raw Mentions
+
 ```bash
 curl http://localhost:3000/posts?limit=10
 ```
 
 ### Health Check
+
 ```bash
 curl http://localhost:3000/health
 ```
 
 ### Subscribe to RSS Feed
+
 Add `http://your-server:3000/rss` to your RSS reader.
 
 ## Development
 
 ### Running Tests
+
 ```bash
 npm test
 ```
 
 ### Linting
+
 ```bash
 npm run lint
 ```
 
 ### Development Server
+
 ```bash
 npm run dev
 ```
@@ -213,11 +228,13 @@ npm run dev
 ### Debugging
 
 Enable debug logging by setting:
+
 ```bash
 NODE_ENV=development
 ```
 
 Check the health endpoint for connection status:
+
 ```bash
 curl http://localhost:3000/health
 ```
@@ -245,6 +262,7 @@ MIT License - see LICENSE file for details.
 ## Support
 
 For issues and questions:
+
 - Check the troubleshooting section
 - Review Mattermost API documentation
 - Open an issue on GitHub
