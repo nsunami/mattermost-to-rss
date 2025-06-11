@@ -1,8 +1,10 @@
-const express = require("express")
-const axios = require("axios")
-const RSS = require("rss")
-const cors = require("cors")
-require("dotenv").config()
+import express, { Request, Response, NextFunction } from "express"
+import axios, { AxiosInstance, AxiosResponse } from "axios"
+import RSS from "rss"
+import cors from "cors"
+import dotenv from "dotenv"
+
+dotenv.config()
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -11,19 +13,96 @@ const PORT = process.env.PORT || 3000
 app.use(cors())
 app.use(express.json())
 
+// Types
+interface MattermostConfig {
+  baseURL: string
+  botToken: string
+  teamId: string
+  teamName: string
+  newsChannelName: string
+  newsChannelId?: string
+}
+
+interface MattermostPost {
+  id: string
+  message: string
+  create_at: number
+  update_at: number
+  channel_id: string
+  file_ids?: string[]
+  type: string
+  reply_count?: number
+  props?: Record<string, any>
+}
+
+interface MattermostPostsResponse {
+  order: string[]
+  posts: Record<string, MattermostPost>
+}
+
+interface NewsPost {
+  id: string
+  message: string
+  createAt: number
+  updateAt: number
+  channelId: string
+  fileIds: string[]
+  type: string
+  replyCount: number
+}
+
+interface ChannelInfo {
+  id: string
+  display_name: string
+  purpose: string
+  header: string
+  name: string
+}
+
+interface UserInfo {
+  id: string
+  username: string
+  first_name: string
+  last_name: string
+  email?: string
+}
+
+interface HealthResponse {
+  status: "healthy" | "unhealthy"
+  timestamp: string
+  mattermost?: string
+  newsChannel?: string
+  error?: string
+}
+
+interface ApiResponse {
+  name: string
+  version: string
+  description: string
+  endpoints: Record<string, string>
+}
+
+interface ErrorResponse {
+  error: string
+  message: string
+}
+
 // Configuration
-const MATTERMOST_CONFIG = {
-  baseURL: process.env.MATTERMOST_URL,
-  botToken: process.env.MATTERMOST_BOT_TOKEN,
-  teamId: process.env.MATTERMOST_TEAM_ID,
-  teamName: process.env.MATTERMOST_TEAM_NAME,
-  newsChannelName: process.env.MATTERMOST_NEWS_CHANNEL,
+const MATTERMOST_CONFIG: MattermostConfig = {
+  baseURL: process.env.MATTERMOST_URL || "",
+  botToken: process.env.MATTERMOST_BOT_TOKEN || "",
+  teamId: process.env.MATTERMOST_TEAM_ID || "",
+  teamName: process.env.MATTERMOST_TEAM_NAME || "",
+  newsChannelName: process.env.MATTERMOST_NEWS_CHANNEL || "",
   newsChannelId: process.env.MATTERMOST_NEWS_CHANNEL_ID,
 }
 
 // Mattermost API client
 class MattermostClient {
-  constructor(config) {
+  private config: MattermostConfig
+  private client: AxiosInstance
+
+  constructor(config: MattermostConfig) {
     this.config = config
     this.client = axios.create({
       baseURL: `${config.baseURL}/api/v4`,
@@ -34,18 +113,18 @@ class MattermostClient {
     })
   }
 
-  async getNewsChannelId() {
+  async getNewsChannelId(): Promise<string> {
     if (this.config.newsChannelId) {
       return this.config.newsChannelId
     }
 
     try {
       // Get channel by name if ID not provided
-      const response = await this.client.get(
+      const response: AxiosResponse<ChannelInfo> = await this.client.get(
         `/teams/${this.config.teamId}/channels/name/${this.config.newsChannelName}`
       )
       return response.data.id
-    } catch (error) {
+    } catch (error: any) {
       console.error(
         "Error fetching news channel:",
         error.response?.data || error.message
@@ -56,21 +135,21 @@ class MattermostClient {
     }
   }
 
-  async getNewsPosts(limit = 50) {
+  async getNewsPosts(limit: number = 50): Promise<NewsPost[]> {
     try {
       const channelId = await this.getNewsChannelId()
 
       // Get posts from the news channel
-      const response = await this.client.get(`/channels/${channelId}/posts`, {
-        params: {
-          per_page: limit,
-          page: 0,
-        },
-      })
+      const response: AxiosResponse<MattermostPostsResponse> =
+        await this.client.get(`/channels/${channelId}/posts`, {
+          params: {
+            per_page: limit,
+            page: 0,
+          },
+        })
 
       const posts = response.data
-
-      const newsPosts = []
+      const newsPosts: NewsPost[] = []
 
       // Process all posts from the channel
       for (const postId of posts.order) {
@@ -92,7 +171,7 @@ class MattermostClient {
       }
 
       return newsPosts.sort((a, b) => b.createAt - a.createAt)
-    } catch (error) {
+    } catch (error: any) {
       console.error(
         "Error fetching news posts:",
         error.response?.data || error.message
@@ -101,31 +180,42 @@ class MattermostClient {
     }
   }
 
-  async getChannelInfo() {
+  async getChannelInfo(): Promise<ChannelInfo> {
     try {
       const channelId = await this.getNewsChannelId()
-      const response = await this.client.get(`/channels/${channelId}`)
+      const response: AxiosResponse<ChannelInfo> = await this.client.get(
+        `/channels/${channelId}`
+      )
       return response.data
-    } catch (error) {
+    } catch (error: any) {
       console.error(
         "Error fetching channel info:",
         error.response?.data || error.message
       )
-      return { display_name: "News Channel", purpose: "News and updates feed" }
+      return {
+        id: "",
+        display_name: "News Channel",
+        purpose: "News and updates feed",
+        header: "",
+        name: "news",
+      }
     }
   }
 
-  async getBotInfo() {
+  async getBotInfo(): Promise<UserInfo> {
     try {
       // Get current user info (the token owner)
-      const response = await this.client.get("/users/me")
+      const response: AxiosResponse<UserInfo> = await this.client.get(
+        "/users/me"
+      )
       return response.data
-    } catch (error) {
+    } catch (error: any) {
       console.error(
         "Error fetching user info:",
         error.response?.data || error.message
       )
       return {
+        id: "",
         username: "api-user",
         first_name: "Mattermost",
         last_name: "API",
@@ -136,11 +226,13 @@ class MattermostClient {
 
 // RSS Feed Generator
 class RSSFeedGenerator {
-  constructor(mattermostClient) {
+  private mattermostClient: MattermostClient
+
+  constructor(mattermostClient: MattermostClient) {
     this.mattermostClient = mattermostClient
   }
 
-  async generateFeed() {
+  async generateFeed(): Promise<string> {
     try {
       const [newsPosts, channelInfo, apiUserInfo] = await Promise.all([
         this.mattermostClient.getNewsPosts(50),
@@ -166,16 +258,16 @@ class RSSFeedGenerator {
         language: "en",
         categories: ["Mattermost", "News", "Updates"],
         pubDate: new Date(),
-        ttl: "60",
+        ttl: 60,
       })
 
       // Add news posts as RSS items
-      newsPosts.forEach((post) => {
+      newsPosts.forEach((post: NewsPost) => {
         const postUrl = `${MATTERMOST_CONFIG.baseURL}/${MATTERMOST_CONFIG.teamName}/pl/${post.id}`
 
         feed.item({
           title: this.extractTitle(post.message),
-          description: this.formatDescription(post.message, post.props, post),
+          description: this.formatDescription(post.message),
           url: postUrl,
           guid: post.id,
           date: new Date(post.createAt),
@@ -183,27 +275,22 @@ class RSSFeedGenerator {
       })
 
       return feed.xml({ indent: true })
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating RSS feed:", error)
       throw new Error("Failed to generate RSS feed")
     }
   }
 
-  extractTitle(message, author) {
+  private extractTitle(message: string, maxLength: number = 120): string {
     const firstLine = message.split("\n")[0]
 
-    function truncateTitle(title, maxLength = 120) {
-      if (title.length > maxLength) {
-        return title.substring(0, maxLength) + "..."
-      } else {
-        return title || "News Post"
-      }
+    if (firstLine.length > maxLength) {
+      return firstLine.substring(0, maxLength) + "..."
     }
-
-    return truncateTitle(firstLine)
+    return firstLine || "News Post"
   }
 
-  formatDescription(message) {
+  private formatDescription(message: string): string {
     // Convert markdown-style formatting to HTML
     return message
       .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
@@ -219,7 +306,7 @@ const mattermostClient = new MattermostClient(MATTERMOST_CONFIG)
 const rssGenerator = new RSSFeedGenerator(mattermostClient)
 
 // Routes
-app.get("/", (req, res) => {
+app.get("/", (req: Request, res: Response<ApiResponse>) => {
   res.json({
     name: "Mattermost RSS API",
     version: "1.0.0",
@@ -232,12 +319,12 @@ app.get("/", (req, res) => {
   })
 })
 
-app.get("/rss", async (req, res) => {
+app.get("/rss", async (req: Request, res: Response) => {
   try {
     const rssXml = await rssGenerator.generateFeed()
     res.set("Content-Type", "application/rss+xml")
     res.send(rssXml)
-  } catch (error) {
+  } catch (error: any) {
     console.error("RSS endpoint error:", error)
     res
       .status(500)
@@ -245,13 +332,13 @@ app.get("/rss", async (req, res) => {
   }
 })
 
-app.get("/rss.xml", async (req, res) => {
+app.get("/rss.xml", async (req: Request, res: Response) => {
   // Alternative endpoint for RSS feed
   try {
     const rssXml = await rssGenerator.generateFeed()
     res.set("Content-Type", "application/rss+xml")
     res.send(rssXml)
-  } catch (error) {
+  } catch (error: any) {
     console.error("RSS.xml endpoint error:", error)
     res
       .status(500)
@@ -259,10 +346,10 @@ app.get("/rss.xml", async (req, res) => {
   }
 })
 
-app.get("/health", async (req, res) => {
+app.get("/health", async (req: Request, res: Response<HealthResponse>) => {
   try {
     // Test Mattermost connection and news channel access
-    const [channelInfo] = await Promise.all([
+    const [botInfo, channelInfo] = await Promise.all([
       mattermostClient.getBotInfo(),
       mattermostClient.getChannelInfo(),
     ])
@@ -273,7 +360,7 @@ app.get("/health", async (req, res) => {
       mattermost: "connected",
       newsChannel: channelInfo.display_name,
     })
-  } catch (error) {
+  } catch (error: any) {
     res.status(503).json({
       status: "unhealthy",
       timestamp: new Date().toISOString(),
@@ -283,10 +370,19 @@ app.get("/health", async (req, res) => {
 })
 
 // Error handling middleware
-app.use((err, req, res, next) => {
-  console.error("Unhandled error:", err)
-  res.status(500).json({ error: "Internal server error", message: err.message })
-})
+app.use(
+  (
+    err: Error,
+    req: Request,
+    res: Response<ErrorResponse>,
+    next: NextFunction
+  ) => {
+    console.error("Unhandled error:", err)
+    res
+      .status(500)
+      .json({ error: "Internal server error", message: err.message })
+  }
+)
 
 // Start server
 app.listen(PORT, () => {
@@ -311,4 +407,4 @@ app.listen(PORT, () => {
   }
 })
 
-module.exports = app
+export default app
