@@ -11,6 +11,7 @@ import {
   MattermostConfig,
   MattermostPostsResponse,
   NewsPost,
+  PostReaction,
   UserInfo,
 } from "./types"
 
@@ -91,8 +92,19 @@ class MattermostClient {
       for (const postId of posts.order) {
         const post = posts.posts[postId]
 
+        const isAdminReacted = post.metadata?.reactions?.some(
+          async (reaction: PostReaction) => {
+            const reactedUserId = reaction.user_id
+            const isAdmin = await this.getUserInfo(reactedUserId)
+            return (
+              isAdmin.roles.includes("system_admin") ||
+              isAdmin.roles.includes("channel_admin")
+            )
+          }
+        )
+
         // Get user info for the post author
-        if (post.type === "") {
+        if (post.type === "" && isAdminReacted) {
           newsPosts.push({
             id: post.id,
             message: post.message,
@@ -113,6 +125,27 @@ class MattermostClient {
         error.response?.data || error.message
       )
       throw new Error("Failed to fetch news posts from Mattermost")
+    }
+  }
+
+  async getUserInfo(userId: string): Promise<UserInfo> {
+    try {
+      const response: AxiosResponse<UserInfo> = await this.client.get(
+        `/users/${userId}`
+      )
+      return response.data
+    } catch (error: any) {
+      console.error(
+        "Error fetching user info:",
+        error.response?.data || error.message
+      )
+      return {
+        id: userId,
+        roles: "system_user",
+        username: "unknown",
+        first_name: "Unknown",
+        last_name: "User",
+      }
     }
   }
 
@@ -155,6 +188,7 @@ class MattermostClient {
         username: "api-user",
         first_name: "Mattermost",
         last_name: "API",
+        roles: "system_user",
       }
     }
   }

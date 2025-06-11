@@ -18,6 +18,23 @@ export interface MattermostPost {
   type: string
   reply_count?: number
   props?: Record<string, any>
+  user_id: string
+  metadata: PostMetadata
+}
+
+export interface PostMetadata {
+  reactions: PostReaction[]
+}
+
+export interface PostReaction {
+  emoji_name: string
+  user_id: string
+  post_id: string
+  create_at: number
+  update_at: number
+  delete_at: number
+  remote_id: string
+  channel_id: string
 }
 
 export interface MattermostPostsResponse {
@@ -50,6 +67,12 @@ export interface UserInfo {
   first_name: string
   last_name: string
   email?: string
+  roles:
+    | "system_user"
+    | "system_admin"
+    | "channel_user"
+    | "channel_admin"
+    | string
 }
 
 export interface HealthResponse {
