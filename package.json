@@ -4,8 +4,8 @@
   "description": "REST API that converts messages mentioning a Mattermost bot to RSS feed",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "node src/server.ts",
+    "dev": "nodemon src/server.ts",
     "test": "jest",
     "lint": "eslint .",
     "docker:build": "docker build -t mattermost-rss-api .",
@@ -29,10 +29,14 @@
     "rss": "^1.2.2"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/rss": "^0.0.32",
     "eslint": "^8.52.0",
     "jest": "^29.7.0",
     "nodemon": "^3.0.1",
-    "supertest": "^6.3.3"
+    "supertest": "^6.3.3",
+    "ts-node": "^10.9.2"
   },
   "engines": {
     "node": ">=16.0.0"
