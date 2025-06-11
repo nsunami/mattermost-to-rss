@@ -13,10 +13,11 @@ app.use(express.json())
 
 // Configuration
 const MATTERMOST_CONFIG = {
-  baseURL: process.env.MATTERMOST_URL || "https://your-mattermost-instance.com",
+  baseURL: process.env.MATTERMOST_URL,
   botToken: process.env.MATTERMOST_BOT_TOKEN,
   teamId: process.env.MATTERMOST_TEAM_ID,
-  newsChannelName: process.env.MATTERMOST_NEWS_CHANNEL || "news",
+  teamName: process.env.MATTERMOST_TEAM_NAME,
+  newsChannelName: process.env.MATTERMOST_NEWS_CHANNEL,
   newsChannelId: process.env.MATTERMOST_NEWS_CHANNEL_ID,
 }
 
@@ -188,7 +189,7 @@ class RSSFeedGenerator {
 
       // Add news posts as RSS items
       newsPosts.forEach((post) => {
-        const postUrl = `${MATTERMOST_CONFIG.baseURL}/${MATTERMOST_CONFIG.teamId}/pl/${post.id}`
+        const postUrl = `${MATTERMOST_CONFIG.baseURL}/${MATTERMOST_CONFIG.teamName}/pl/${post.id}`
 
         feed.item({
           title: this.extractTitle(post.message),
@@ -228,6 +229,7 @@ class RSSFeedGenerator {
       .replace(/\*(.*?)\*/g, "<em>$1</em>")
       .replace(/`(.*?)`/g, "<code>$1</code>")
       .replace(/\n/g, "<br>")
+      .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>')
   }
 }
 
