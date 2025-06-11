@@ -101,24 +101,6 @@ class MattermostClient {
     }
   }
 
-  async getUserInfo(userId) {
-    try {
-      const response = await this.client.get(`/users/${userId}`)
-      return response.data
-    } catch (error) {
-      console.error(
-        `Error fetching user info for ${userId}:`,
-        error.response?.data || error.message
-      )
-      return {
-        id: userId,
-        username: "unknown_user",
-        first_name: "Unknown",
-        last_name: "User",
-      }
-    }
-  }
-
   async getChannelInfo() {
     try {
       const channelId = await this.getNewsChannelId()
@@ -299,7 +281,7 @@ app.get("/posts", async (req, res) => {
 app.get("/health", async (req, res) => {
   try {
     // Test Mattermost connection and news channel access
-    const [userInfo, channelInfo] = await Promise.all([
+    const [channelInfo] = await Promise.all([
       mattermostClient.getBotInfo(),
       mattermostClient.getChannelInfo(),
     ])
