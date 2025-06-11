@@ -259,24 +259,6 @@ app.get("/rss.xml", async (req, res) => {
   }
 })
 
-app.get("/posts", async (req, res) => {
-  try {
-    const limit = parseInt(req.query.limit) || 50
-    const newsPosts = await mattermostClient.getNewsPosts(limit)
-    res.json({
-      posts: newsPosts,
-      count: newsPosts.length,
-      timestamp: new Date().toISOString(),
-      channel: MATTERMOST_CONFIG.newsChannelName,
-    })
-  } catch (error) {
-    console.error("News posts endpoint error:", error)
-    res
-      .status(500)
-      .json({ error: "Failed to fetch news posts", message: error.message })
-  }
-})
-
 app.get("/health", async (req, res) => {
   try {
     // Test Mattermost connection and news channel access
