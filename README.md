@@ -2,6 +2,8 @@
 
 Creating an RSS feed from a Mattermost Channel
 
+👉 Note: Currently, only the posts that have a reaction with an admin account are included in the RSS feed.
+
 ## API Endpoints
 
 | Endpoint   | Method | Description                             |
