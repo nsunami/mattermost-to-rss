@@ -190,7 +190,6 @@ class RSSFeedGenerator {
   }
 
   extractTitle(message, author) {
-    // Extract first line or first 60 characters as title, include author
     const firstLine = message.split("\n")[0]
 
     function truncateTitle(title, maxLength = 120) {
