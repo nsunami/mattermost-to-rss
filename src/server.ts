@@ -3,6 +3,16 @@ import axios, { AxiosInstance, AxiosResponse } from "axios"
 import RSS from "rss"
 import cors from "cors"
 import dotenv from "dotenv"
+import {
+  ApiResponse,
+  ChannelInfo,
+  ErrorResponse,
+  HealthResponse,
+  MattermostConfig,
+  MattermostPostsResponse,
+  NewsPost,
+  UserInfo,
+} from "./types"
 
 dotenv.config()
 
@@ -12,80 +22,6 @@ const PORT = process.env.PORT || 3000
 // Middleware
 app.use(cors())
 app.use(express.json())
-
-// Types
-interface MattermostConfig {
-  baseURL: string
-  botToken: string
-  teamId: string
-  teamName: string
-  newsChannelName: string
-  newsChannelId?: string
-}
-
-interface MattermostPost {
-  id: string
-  message: string
-  create_at: number
-  update_at: number
-  channel_id: string
-  file_ids?: string[]
-  type: string
-  reply_count?: number
-  props?: Record<string, any>
-}
-
-interface MattermostPostsResponse {
-  order: string[]
-  posts: Record<string, MattermostPost>
-}
-
-interface NewsPost {
-  id: string
-  message: string
-  createAt: number
-  updateAt: number
-  channelId: string
-  fileIds: string[]
-  type: string
-  replyCount: number
-}
-
-interface ChannelInfo {
-  id: string
-  display_name: string
-  purpose: string
-  header: string
-  name: string
-}
-
-interface UserInfo {
-  id: string
-  username: string
-  first_name: string
-  last_name: string
-  email?: string
-}
-
-interface HealthResponse {
-  status: "healthy" | "unhealthy"
-  timestamp: string
-  mattermost?: string
-  newsChannel?: string
-  error?: string
-}
-
-interface ApiResponse {
-  name: string
-  version: string
-  description: string
-  endpoints: Record<string, string>
-}
-
-interface ErrorResponse {
-  error: string
-  message: string
-}
 
 // Configuration
 const MATTERMOST_CONFIG: MattermostConfig = {
