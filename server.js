@@ -155,7 +155,7 @@ class RSSFeedGenerator {
           `Latest posts from ${channelInfo.display_name}`,
         feed_url: `${process.env.BASE_URL || "http://localhost:3000"}/rss`,
         site_url: MATTERMOST_CONFIG.baseURL,
-        image_url: `${MATTERMOST_CONFIG.baseURL}/api/v4/channels/${channelInfo.id}/image`,
+        image_url: `${MATTERMOST_CONFIG.baseURL}/api/v4/brand/image`,
         managingEditor: `${apiUserInfo.email || "noreply@mattermost.com"} (${
           apiUserInfo.first_name
         } ${apiUserInfo.last_name})`,
