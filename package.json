@@ -2,9 +2,9 @@
   "name": "mattermost-rss-api",
   "version": "1.0.0",
   "description": "REST API that converts messages mentioning a Mattermost bot to RSS feed",
-  "main": "server.js",
+  "main": "dist/server.js",
   "scripts": {
-    "start": "node src/server.ts",
+    "start": "tsc && node dist/server.js",
     "dev": "nodemon src/server.ts",
     "test": "jest",
     "lint": "eslint .",
