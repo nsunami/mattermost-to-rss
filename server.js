@@ -68,6 +68,7 @@ class MattermostClient {
       })
 
       const posts = response.data
+
       const newsPosts = []
 
       // Process all posts from the channel
@@ -75,29 +76,18 @@ class MattermostClient {
         const post = posts.posts[postId]
 
         // Get user info for the post author
-        const authorInfo = await this.getUserInfo(post.user_id)
-
-        newsPosts.push({
-          id: post.id,
-          message: post.message,
-          createAt: post.create_at,
-          updateAt: post.update_at,
-          channelId: post.channel_id,
-          userId: post.user_id,
-          author: {
-            id: authorInfo.id,
-            username: authorInfo.username,
-            firstName: authorInfo.first_name || "",
-            lastName: authorInfo.last_name || "",
-            nickname: authorInfo.nickname || "",
-            email: authorInfo.email || "",
-          },
-          props: post.props || {},
-          fileIds: post.file_ids || [],
-          isPinned: post.is_pinned || false,
-          hasReactions: post.has_reactions || false,
-          replyCount: post.reply_count || 0,
-        })
+        if (post.type === "") {
+          newsPosts.push({
+            id: post.id,
+            message: post.message,
+            createAt: post.create_at,
+            updateAt: post.update_at,
+            channelId: post.channel_id,
+            fileIds: post.file_ids || [],
+            type: post.type || "",
+            replyCount: post.reply_count || 0,
+          })
+        }
       }
 
       return newsPosts.sort((a, b) => b.createAt - a.createAt)
@@ -124,7 +114,6 @@ class MattermostClient {
         username: "unknown_user",
         first_name: "Unknown",
         last_name: "User",
-        nickname: "",
       }
     }
   }
@@ -200,32 +189,13 @@ class RSSFeedGenerator {
       // Add news posts as RSS items
       newsPosts.forEach((post) => {
         const postUrl = `${MATTERMOST_CONFIG.baseURL}/${MATTERMOST_CONFIG.teamId}/pl/${post.id}`
-        const authorName = this.getAuthorDisplayName(post.author)
 
         feed.item({
-          title: this.extractTitle(post.message, post.author),
-          description: this.formatDescription(
-            post.message,
-            post.props,
-            post.author,
-            post
-          ),
+          title: this.extractTitle(post.message),
+          description: this.formatDescription(post.message, post.props, post),
           url: postUrl,
           guid: post.id,
-          categories: this.extractCategories(post.props, post),
-          author: `${post.author.username}@mattermost.com (${authorName})`,
-          enclosure: this.getEnclosure(post.fileIds),
           date: new Date(post.createAt),
-          custom_elements: [
-            { "mattermost:post_id": post.id },
-            { "mattermost:channel_id": post.channelId },
-            { "mattermost:author_id": post.userId },
-            { "mattermost:author_username": post.author.username },
-            { "mattermost:is_pinned": post.isPinned },
-            { "mattermost:has_reactions": post.hasReactions },
-            { "mattermost:reply_count": post.replyCount },
-            { "mattermost:updated_at": new Date(post.updateAt).toISOString() },
-          ],
         })
       })
 
@@ -236,103 +206,28 @@ class RSSFeedGenerator {
     }
   }
 
-  getAuthorDisplayName(author) {
-    if (author.nickname) {
-      return author.nickname
-    }
-    if (author.firstName || author.lastName) {
-      return `${author.firstName} ${author.lastName}`.trim()
-    }
-    return author.username
-  }
-
   extractTitle(message, author) {
     // Extract first line or first 60 characters as title, include author
     const firstLine = message.split("\n")[0]
-    const authorName = this.getAuthorDisplayName(author)
 
-    let title
-    if (firstLine.length > 50) {
-      title = firstLine.substring(0, 50) + "..."
-    } else {
-      title = firstLine || "News Post"
+    function truncateTitle(title, maxLength = 120) {
+      if (title.length > maxLength) {
+        return title.substring(0, maxLength) + "..."
+      } else {
+        return title || "News Post"
+      }
     }
 
-    return `${authorName}: ${title}`
+    return truncateTitle(firstLine)
   }
 
-  formatDescription(message, props, author, post) {
-    const authorName = this.getAuthorDisplayName(author)
-    let description = `<strong>${authorName}</strong> posted:<br><br>`
-
-    // Add post indicators
-    const indicators = []
-    if (post.isPinned) indicators.push("📌 Pinned")
-    if (post.hasReactions) indicators.push("👍 Has reactions")
-    if (post.replyCount > 0) indicators.push(`💬 ${post.replyCount} replies`)
-
-    if (indicators.length > 0) {
-      description += `<small><em>${indicators.join(" • ")}</em></small><br><br>`
-    }
-
+  formatDescription(message) {
     // Convert markdown-style formatting to HTML
-    let formattedMessage = message
+    return message
       .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
       .replace(/\*(.*?)\*/g, "<em>$1</em>")
       .replace(/`(.*?)`/g, "<code>$1</code>")
       .replace(/\n/g, "<br>")
-
-    description += formattedMessage
-
-    // Add any additional props information
-    if (props && Object.keys(props).length > 0) {
-      const relevantProps = { ...props }
-      // Remove common internal props to keep description clean
-      delete relevantProps.mentions
-      delete relevantProps.channel_mentions
-
-      if (Object.keys(relevantProps).length > 0) {
-        description +=
-          "<hr><small>Additional data: " +
-          JSON.stringify(relevantProps) +
-          "</small>"
-      }
-    }
-
-    return description
-  }
-
-  extractCategories(props, post) {
-    const categories = ["mattermost", "news"]
-
-    if (post.isPinned) categories.push("pinned")
-    if (post.hasReactions) categories.push("popular")
-    if (post.replyCount > 0) categories.push("discussion")
-
-    if (props) {
-      // Extract categories from props if they exist
-      if (props.tags) {
-        categories.push(...props.tags.split(",").map((tag) => tag.trim()))
-      }
-      if (props.category) {
-        categories.push(props.category)
-      }
-      if (props.type) {
-        categories.push(props.type)
-      }
-    }
-
-    return categories
-  }
-
-  getEnclosure(fileIds) {
-    // If there are file attachments, we could potentially create enclosures
-    // This would require additional API calls to get file info
-    if (fileIds && fileIds.length > 0) {
-      // Return null for now, but this could be extended to handle file attachments
-      return null
-    }
-    return null
   }
 }
 
@@ -349,7 +244,6 @@ app.get("/", (req, res) => {
     endpoints: {
       "GET /rss": "Get RSS feed of news channel posts",
       "GET /rss.xml": "Get RSS feed of news posts (alternative endpoint)",
-      "GET /posts": "Get raw news posts as JSON",
       "GET /health": "Health check endpoint",
     },
   })
@@ -412,7 +306,6 @@ app.get("/health", async (req, res) => {
       status: "healthy",
       timestamp: new Date().toISOString(),
       mattermost: "connected",
-      user: userInfo.username,
       newsChannel: channelInfo.display_name,
     })
   } catch (error) {
