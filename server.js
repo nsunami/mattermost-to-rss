@@ -326,9 +326,7 @@ app.listen(PORT, () => {
   }
 
   if (!MATTERMOST_CONFIG.newsChannelId && !MATTERMOST_CONFIG.newsChannelName) {
-    console.warn(
-      '⚠️  No news channel specified. Using default "news" channel name.'
-    )
+    console.warn("⚠️  No news channel specified. ")
   }
 })
 
