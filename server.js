@@ -149,7 +149,7 @@ class RSSFeedGenerator {
       ])
 
       const feed = new RSS({
-        title: `${channelInfo.display_name} - News Feed`,
+        title: `${MATTERMOST_CONFIG.teamName} - News Feed`,
         description:
           channelInfo.purpose ||
           `Latest posts from ${channelInfo.display_name}`,
