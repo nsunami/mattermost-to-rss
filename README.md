@@ -142,12 +142,6 @@ This will list all bot accounts. The first column is the bot ID.
 3. Generate an access token
 4. Ensure the bot has permissions to read the target channel
 
-## Development Server
-
-```bash
-npm run dev
-```
-
 ## License
 
 MIT License - see LICENSE file for details.
