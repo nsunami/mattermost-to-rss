@@ -34,6 +34,9 @@ const MATTERMOST_CONFIG: MattermostConfig = {
   newsChannelId: process.env.MATTERMOST_NEWS_CHANNEL_ID,
 }
 
+// Emoji to target
+const APPROVAL_EMOJI = process.env.APPROVAL_EMOJI || "loudspeaker"
+
 // Mattermost API client
 class MattermostClient {
   private config: MattermostConfig
@@ -92,19 +95,21 @@ class MattermostClient {
       for (const postId of posts.order) {
         const post = posts.posts[postId]
 
-        const isAdminReacted = post.metadata?.reactions?.some(
-          async (reaction: PostReaction) => {
-            const reactedUserId = reaction.user_id
-            const isAdmin = await this.getUserInfo(reactedUserId)
-            return (
-              isAdmin.roles.includes("system_admin") ||
-              isAdmin.roles.includes("channel_admin")
-            )
-          }
+        const reactionWithLoudspeaker = post.metadata?.reactions?.find(
+          (reaction: PostReaction) => reaction.emoji_name === APPROVAL_EMOJI
+        )
+        if (reactionWithLoudspeaker == null) continue
+
+        const reactedUser = await this.getUserInfo(
+          reactionWithLoudspeaker.user_id
         )
 
+        const isReactedUserAdmin =
+          reactedUser.roles.includes("system_admin") ||
+          reactedUser.roles.includes("channel_admin")
+
         // Get user info for the post author
-        if (post.type === "" && isAdminReacted) {
+        if (post.type === "" && isReactedUserAdmin) {
           newsPosts.push({
             id: post.id,
             message: post.message,
